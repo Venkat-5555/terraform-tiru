@@ -54,6 +54,38 @@ module "ansible_sg" {
   
 }
 
+module "app_alb_sg" {
+    source = "../../terraform-aws-security-group"
+    sg_name = "app-alb"
+    enviornment = var.enviornment
+    project_name = var.project_name
+    vpc_id = local.vpc_id
+    common_tags = var.common_tags
+    sg_tags = var.app_alb_sg_tags
+  
+}
+
+module "web_alb_sg" {
+    source = "../../terraform-aws-security-group"
+    sg_name = "web-alb"
+    enviornment = var.enviornment
+    project_name = var.project_name
+    vpc_id = local.vpc_id
+    common_tags = var.common_tags
+    sg_tags = var.web_alb_sg_tags
+  
+}
+
+module "vpn_sg" {
+    source = "../../terraform-aws-security-group"
+    sg_name = "vpn"
+    enviornment = var.enviornment
+    project_name = var.project_name
+    vpc_id = local.vpc_id
+    common_tags = var.common_tags
+  
+}
+
 resource "aws_security_group_rule" "mysql_backend" {
   type              = "ingress"
   from_port         = 3306
@@ -63,28 +95,28 @@ resource "aws_security_group_rule" "mysql_backend" {
   security_group_id = module.mysql_sg.id
 }
 
-resource "aws_security_group_rule" "backend_frontend" {
-  type              = "ingress"
-  from_port         = 8080
-  to_port           = 8080
-  protocol          = "tcp"
-  source_security_group_id = module.frontend_sg.id
-  security_group_id = module.backend_sg.id
-}
+# resource "aws_security_group_rule" "backend_frontend" {
+#   type              = "ingress"
+#   from_port         = 8080
+#   to_port           = 8080
+#   protocol          = "tcp"
+#   source_security_group_id = module.frontend_sg.id
+#   security_group_id = module.backend_sg.id
+# }
 
-resource "aws_security_group_rule" "frontend_pubilc" {
-  type              = "ingress"
-  from_port         = 80
-  to_port           = 80
-  protocol          = "tcp"
-  cidr_blocks = ["0.0.0.0/0"]
-  security_group_id = module.frontend_sg.id
-}
+# resource "aws_security_group_rule" "frontend_pubilc" {
+#   type              = "ingress"
+#   from_port         = 80
+#   to_port           = 80
+#   protocol          = "tcp"
+#   cidr_blocks = ["0.0.0.0/0"]
+#   security_group_id = module.frontend_sg.id
+# }
 
 resource "aws_security_group_rule" "mysql_bastion" {
   type              = "ingress"
-  from_port         = 22
-  to_port           = 22
+  from_port         = 3306
+  to_port           = 3306
   protocol          = "tcp"
   source_security_group_id = module.bastion_sg.id
   security_group_id = module.mysql_sg.id
@@ -108,14 +140,14 @@ resource "aws_security_group_rule" "frontend_bastion" {
   security_group_id = module.frontend_sg.id
 }
 
-resource "aws_security_group_rule" "mysql_ansible" {
+/* resource "aws_security_group_rule" "mysql_ansible" {
   type              = "ingress"
   from_port         = 22
   to_port           = 22
   protocol          = "tcp"
   source_security_group_id = module.ansible_sg.id
   security_group_id = module.mysql_sg.id
-}
+} */
 
 resource "aws_security_group_rule" "backend_ansible" {
   type              = "ingress"
@@ -153,3 +185,128 @@ resource "aws_security_group_rule" "bastion_public" {
   security_group_id = module.bastion_sg.id
 }
 
+resource "aws_security_group_rule" "backend_app_alb" {
+  type              = "ingress"
+  from_port         = 8080
+  to_port           = 8080
+  protocol          = "tcp"
+  source_security_group_id = module.app_alb_sg.id
+  security_group_id = module.backend_sg.id
+}
+
+resource "aws_security_group_rule" "app_alb_bastion" {
+  type              = "ingress"
+  from_port         = 80
+  to_port           = 80
+  protocol          = "tcp"
+  source_security_group_id = module.bastion_sg.id
+  security_group_id = module.app_alb_sg.id
+}
+
+resource "aws_security_group_rule" "vpn_public" {
+  type              = "ingress"
+  from_port         = 22
+  to_port           = 22
+  protocol          = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+  security_group_id = module.vpn_sg.id
+}
+
+resource "aws_security_group_rule" "vpn_public_443" {
+  type              = "ingress"
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+  security_group_id = module.vpn_sg.id
+}
+
+resource "aws_security_group_rule" "vpn_public_943" {
+  type              = "ingress"
+  from_port         = 943
+  to_port           = 943
+  protocol          = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+  security_group_id = module.vpn_sg.id
+}
+
+resource "aws_security_group_rule" "vpn_public_1194" {
+  type              = "ingress"
+  from_port         = 1194
+  to_port           = 1194
+  protocol          = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+  security_group_id = module.vpn_sg.id
+}
+
+resource "aws_security_group_rule" "app_alb_vpn" {
+  type              = "ingress"
+  from_port         = 80
+  to_port           = 80
+  protocol          = "tcp"
+  source_security_group_id = module.vpn_sg.id
+  security_group_id = module.app_alb_sg.id
+}
+
+resource "aws_security_group_rule" "backend_vpn" {
+  type              = "ingress"
+  from_port         = 22
+  to_port           = 22
+  protocol          = "tcp"
+  source_security_group_id = module.vpn_sg.id
+  security_group_id = module.backend_sg.id
+}
+
+resource "aws_security_group_rule" "backend_vpn_8080" {
+  type              = "ingress"
+  from_port         = 8080
+  to_port           = 8080
+  protocol          = "tcp"
+  source_security_group_id = module.vpn_sg.id
+  security_group_id = module.backend_sg.id
+}
+
+resource "aws_security_group_rule" "web_alb_public_443" {
+  type              = "ingress"
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+  security_group_id = module.web_alb_sg.id
+}
+
+resource "aws_security_group_rule" "web_alb_public_http" {
+  type              = "ingress"
+  from_port         = 80
+  to_port           = 80
+  protocol          = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+  security_group_id = module.web_alb_sg.id
+}
+
+resource "aws_security_group_rule" "frontend_vpn_22" {
+  type              = "ingress"
+  from_port         = 22
+  to_port           = 22
+  protocol          = "tcp"
+  source_security_group_id = module.vpn_sg.id
+  security_group_id = module.frontend_sg.id
+}
+
+resource "aws_security_group_rule" "frontend_web_alb" {
+  type              = "ingress"
+  from_port         = 80
+  to_port           = 80
+  protocol          = "tcp"
+  source_security_group_id = module.web_alb_sg.id
+  security_group_id = module.frontend_sg.id
+}
+
+resource "aws_security_group_rule" "app_alb_frontend" {
+  type              = "ingress"
+  from_port         = 80
+  to_port           = 80
+  protocol          = "tcp"
+  source_security_group_id = module.frontend_sg.id
+  security_group_id = module.app_alb_sg.id
+}

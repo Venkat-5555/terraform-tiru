@@ -1,0 +1,9 @@
+# Ignore Terraform cache and provider binaries
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+*.tfplan
+*.auto.tfvars
+providers/
+
